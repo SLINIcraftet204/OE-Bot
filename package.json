@@ -4,11 +4,9 @@
   "description": "Ein Discord-Bot für THW-Mitglieder",
   "main": "index.js",
   "dependencies": {
-    "axios": "^1.7.9",
+    "async-mutex": "^0.5.0",
     "discord.js": "^14.0.0",
-    "fs": "0.0.1-security",
-    "pdf-parse": "^1.1.1",
-    "pdfjs-dist": "^4.10.38"
+    "fs": "0.0.1-security"
   },
   "scripts": {
     "start": "node index.js"
