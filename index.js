@@ -325,7 +325,7 @@ client.on('interactionCreate', async interaction => {
                 "E", "WP-A", "WP-B", "WP-C", "N", "SB-A", "SB-B", "Log-MW", "Log-V",
                 "F", "K-A", "K-B", "TW", "Öl-A", "Öl-B", "Öl-C", "BT", "BrB",
                 "Sp", "MT", "ENT", "ESS", "MHP", "UL", "TS", "SEEBA", "SEEWA", "SEELift",
-                "SEC", "HCP", "TAST", "ETS", "ZTr", "B-A", "B-E", "Stab", "ZTr Log", "ZTr FK", "JuHe"
+                "SEC", "HCP", "TAST", "ETS", "ZTr", "B-A", "B-E", "Stab", "ZTr Log", "ZTr FK", "JuHe", "GA"
             ];
 
             const teOptions1 = teileinheiten.slice(0, 25).filter(te => te).map(te => ({ label: te || 'N/A', value: `te_${te}` }));
