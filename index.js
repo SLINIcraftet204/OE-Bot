@@ -14,7 +14,27 @@ let cacheMap = new Map();
 
 
 function saveCacheToFile() {
-    fs.writeFileSync(path, JSON.stringify(Array.from(cacheMap.entries())));
+    const cacheData = Array.from(cacheMap.entries());
+    fs.writeFileSync(path, JSON.stringify(cacheData, null, 2));
+}
+
+function removeFromCache(messageId) {
+    cacheMap.delete(messageId);
+    saveCacheToFile();
+}
+
+async function removeStaleMessages() {
+    for (const [messageId, messageData] of cacheMap.entries()) {
+        try {
+            await client.channels.cache.get(messageData.channelId).messages.fetch(messageId);
+        } catch (error) {
+            if (error.code === 10008) { // Nachricht nicht gefunden
+                console.log(`Lösche veraltete Nachricht: ${messageId}`);
+                cacheMap.delete(messageId);
+                saveCacheToFile();
+            }
+        }
+    }
 }
 
 function loadCacheFromFile() {
@@ -183,7 +203,7 @@ async function sendGui(interaction) {
         const helpButtonRow = new ActionRowBuilder().addComponents(helpButton);
 
         const uniqueOptions = Array.from(new Set(oeData.map(entry => entry["Landesverband/AZ"])))
-            .filter(value => value) // Filtert N/A aus
+            .filter(value => value && !["Neuhausen", "Brandenburg an der Havel", "Hoya"].includes(value)) // Filtert N/A aus
             .slice(0, 25)
             .map(value => ({
                 label: value || 'N/A',
@@ -212,6 +232,7 @@ async function sendGui(interaction) {
 }
 
 client.on('interactionCreate', async interaction => {
+    await removeStaleMessages();
     if (!interaction.isChatInputCommand() && !interaction.isStringSelectMenu() && !interaction.isButton() && !interaction.isModalSubmit()) return;
 
     if (interaction.commandName === 'send-gui') {
@@ -433,8 +454,7 @@ client.on('interactionCreate', async interaction => {
 
                 await interaction.update({ content: `Dein Nickname wurde auf ${nickname} gesetzt.`, components: [], ephemeral: true });
 
-                cacheMap.delete(interaction.message.id);
-                saveCacheToFile();
+                removeFromCache(interaction.message.id);
             } catch (error) {
                 if (error.code === 50013) { // Fehlende Berechtigungen
                     await interaction.update({
@@ -442,16 +462,19 @@ client.on('interactionCreate', async interaction => {
                         components: [],
                         ephemeral: true
                     });
+                    removeFromCache(interaction.message.id);
                 } else if (error.code === 10007) { // Unbekannter Nutzer
                     await interaction.update({
                         content: 'Der Nutzer konnte nicht gefunden werden. Bitte überprüfe, ob der Nutzer noch auf dem Server ist.',
                         components: [],
                         ephemeral: true
                     });
+                    removeFromCache(interaction.message.id);
                 } else {
                     console.error('Fehler beim Setzen des Nicknames:', error);
                     await interaction.reply({ content: 'Etwas ist schief gelaufen. Bitte versuche es erneut.', ephemeral: true });
                 }
+                removeFromCache(interaction.message.id);
             }
         }
     }
@@ -490,8 +513,7 @@ client.on('interactionCreate', async interaction => {
 
                 await interaction.update({ content: `Dein Nickname wurde auf ${nickname} gesetzt.`,components: [], ephemeral: true });
 
-                cacheMap.delete(interaction.message.id);
-                saveCacheToFile();
+                removeFromCache(interaction.message.id);
             } catch (error) {
                 if (error.code === 50013) { // Fehlende Berechtigungen
                     await interaction.update({
@@ -499,10 +521,19 @@ client.on('interactionCreate', async interaction => {
                         components: [],
                         ephemeral: true
                     });
+                    removeFromCache(interaction.message.id);
+                } else if (error.code === 10007) { // Unbekannter Nutzer
+                    await interaction.update({
+                        content: 'Der Nutzer konnte nicht gefunden werden. Bitte überprüfe, ob der Nutzer noch auf dem Server ist.',
+                        components: [],
+                        ephemeral: true
+                    });
+                    removeFromCache(interaction.message.id);
                 } else {
                     console.error('Fehler beim Setzen des Nicknames:', error);
                     await interaction.reply({ content: 'Etwas ist schief gelaufen. Bitte versuche es erneut.', ephemeral: true });
                 }
+                removeFromCache(interaction.message.id);
             }
         }
     }

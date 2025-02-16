@@ -4,7 +4,6 @@
   "description": "Ein Discord-Bot für THW-Mitglieder",
   "main": "index.js",
   "dependencies": {
-    "async-mutex": "^0.5.0",
     "discord.js": "^14.0.0",
     "fs": "0.0.1-security"
   },
