@@ -338,7 +338,7 @@ client.on('interactionCreate', async interaction => {
 
             const teSelectMenu2 = new StringSelectMenuBuilder()
                 .setCustomId('select_te_2')
-                .setPlaceholder('Wähle deine Teileinheit (26-47)')
+                .setPlaceholder('Wähle deine Teileinheit (26-49)')
                 .addOptions(teOptions2);
 
             const row1 = new ActionRowBuilder().addComponents(teSelectMenu1);
