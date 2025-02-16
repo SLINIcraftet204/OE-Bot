@@ -6,8 +6,6 @@ const { Client, GatewayIntentBits, SlashCommandBuilder, EmbedBuilder, ActionRowB
 const fs = require('fs');
 const config = require('./config.json');
 const path = './embedCache.json';
-const { Mutex } = require('async-mutex');
-const messageMapMutex = new Mutex();
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] });
 
@@ -441,6 +439,12 @@ client.on('interactionCreate', async interaction => {
                 if (error.code === 50013) { // Fehlende Berechtigungen
                     await interaction.update({
                         content: 'Der Nutzer hat höhere Rechte als der Bot. Das Umbenennen wurde zum Crashschutz abgebrochen. Es wird empfohlen, ein Ticket zu eröffnen.',
+                        components: [],
+                        ephemeral: true
+                    });
+                } else if (error.code === 10007) { // Unbekannter Nutzer
+                    await interaction.update({
+                        content: 'Der Nutzer konnte nicht gefunden werden. Bitte überprüfe, ob der Nutzer noch auf dem Server ist.',
                         components: [],
                         ephemeral: true
                     });
