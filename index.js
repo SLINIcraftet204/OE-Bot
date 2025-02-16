@@ -325,7 +325,7 @@ client.on('interactionCreate', async interaction => {
                 "E", "WP-A", "WP-B", "WP-C", "N", "SB-A", "SB-B", "Log-MW", "Log-V",
                 "F", "K-A", "K-B", "TW", "Öl-A", "Öl-B", "Öl-C", "BT", "BrB",
                 "Sp", "MT", "ENT", "ESS", "MHP", "UL", "TS", "SEEBA", "SEEWA", "SEELift",
-                "SEC", "HCP", "TAST", "ETS", "ZTr", "B-A", "B-E", "Stab", "ZTr Log", "ZTr FK"
+                "SEC", "HCP", "TAST", "ETS", "ZTr", "B-A", "B-E", "Stab", "ZTr Log", "ZTr FK", "JuHe"
             ];
 
             const teOptions1 = teileinheiten.slice(0, 25).filter(te => te).map(te => ({ label: te || 'N/A', value: `te_${te}` }));
@@ -423,7 +423,7 @@ client.on('interactionCreate', async interaction => {
                     new ActionRowBuilder().addComponents(
                         new TextInputBuilder()
                             .setCustomId('username_input')
-                            .setLabel('Benutzername')
+                            .setLabel('Benutzername (max. 32 Zeichen)')
                             .setStyle(TextInputStyle.Short)
                             .setRequired(false)
                     )
@@ -491,6 +491,10 @@ client.on('interactionCreate', async interaction => {
                 let username = interaction.user.username;
                 const input = interaction.fields.getTextInputValue('username_input');
                 if (input) {
+                    if (input.length > 32) {
+                        await interaction.reply({ content: 'Der Benutzername darf maximal 32 Zeichen lang sein.', ephemeral: true });
+                        return;
+                    }
                     username = input;
                 }
 
@@ -506,7 +510,7 @@ client.on('interactionCreate', async interaction => {
                     entry["Ortsverband"] === messageData.selectedOv
                 );
                 const oeKuerzel = oeEntry ? oeEntry["OE-Kürzel"] : 'Unbekannt';
-                const nickname = `${username} | ${selectedTe} - ${oeKuerzel}`;
+                const nickname = `${username} | ${selectedTe} - ${oeKuerzel}`.substring(0, 32);
 
                 const member = await interaction.guild.members.fetch(interaction.user.id);
                 await member.setNickname(nickname);
