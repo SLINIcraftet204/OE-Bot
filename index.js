@@ -178,6 +178,7 @@ async function sendGui(interaction) {
             .setTimestamp();
 
         const uniqueOptions = Array.from(new Set(oeData.map(entry => entry["Landesverband/AZ"])))
+            .filter(value => value) // Filtert N/A aus
             .slice(0, 25)
             .map(value => ({
                 label: value || 'N/A',
@@ -240,7 +241,7 @@ client.on('interactionCreate', async interaction => {
         if (interaction.customId === 'select_lv') {
             const selectedLv = interaction.values[0].replace('lv_', '');
             const rsOptions = oeData.filter(entry => entry["Landesverband/AZ"] === selectedLv)
-                .map(entry => entry["Regionalstelle"]).filter((v, i, a) => a.indexOf(v) === i)
+                .map(entry => entry["Regionalstelle"]).filter((v, i, a) => a.indexOf(v) === i && v)
                 .map(rs => ({ label: rs || 'N/A', value: `rs_${rs}` }));
             const rsSelectMenu = new StringSelectMenuBuilder()
                 .setCustomId('select_rs')
@@ -263,7 +264,7 @@ client.on('interactionCreate', async interaction => {
         if (interaction.customId === 'select_rs') {
             const selectedRs = interaction.values[0].replace('rs_', '');
             const ovOptions = oeData.filter(entry => entry["Regionalstelle"] === selectedRs)
-                .map(entry => entry["Ortsverband"]).filter((v, i, a) => a.indexOf(v) === i)
+                .map(entry => entry["Ortsverband"]).filter((v, i, a) => a.indexOf(v) === i && v)
                 .map(ov => ({ label: ov || 'N/A', value: `ov_${ov}` }));
             const ovSelectMenu = new StringSelectMenuBuilder()
                 .setCustomId('select_ov')
@@ -294,8 +295,8 @@ client.on('interactionCreate', async interaction => {
                 "SEC", "HCP", "TAST", "ETS", "ZTr", "B-A", "B-E", "Stab", "ZTr Log", "ZTr FK"
             ];
 
-            const teOptions1 = teileinheiten.slice(0, 25).map(te => ({ label: te || 'N/A', value: `te_${te}` }));
-            const teOptions2 = teileinheiten.slice(25).map(te => ({ label: te || 'N/A', value: `te_${te}` }));
+            const teOptions1 = teileinheiten.slice(0, 25).filter(te => te).map(te => ({ label: te || 'N/A', value: `te_${te}` }));
+            const teOptions2 = teileinheiten.slice(25).filter(te => te).map(te => ({ label: te || 'N/A', value: `te_${te}` }));
 
             const teSelectMenu1 = new StringSelectMenuBuilder()
                 .setCustomId('select_te_1')
