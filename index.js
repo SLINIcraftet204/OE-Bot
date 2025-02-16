@@ -177,6 +177,13 @@ async function sendGui(interaction) {
             .setThumbnail(thumbnailUrl)
             .setTimestamp();
 
+        const helpButton = new ButtonBuilder()
+            .setCustomId('help_button')
+            .setLabel('❓')
+            .setStyle(ButtonStyle.Secondary);
+
+        const helpButtonRow = new ActionRowBuilder().addComponents(helpButton);
+
         const uniqueOptions = Array.from(new Set(oeData.map(entry => entry["Landesverband/AZ"])))
             .filter(value => value) // Filtert N/A aus
             .slice(0, 25)
@@ -192,7 +199,7 @@ async function sendGui(interaction) {
 
         const row = new ActionRowBuilder().addComponents(selectMenu);
 
-        const sentMessage = await channel.send({ embeds: [embed], components: [row] });
+        const sentMessage = await channel.send({ embeds: [embed], components: [row, helpButtonRow] });
         console.log('GUI gesendet:', sentMessage.id);
 
         cacheMap.set(sentMessage.id, { channelId: channel.id, title, message, embedcolor, thumbnailUrl });
@@ -238,6 +245,13 @@ client.on('interactionCreate', async interaction => {
             return;
         }
 
+        const helpButton = new ButtonBuilder()
+            .setCustomId('help_button')
+            .setLabel('❓')
+            .setStyle(ButtonStyle.Secondary);
+
+        const helpButtonRow = new ActionRowBuilder().addComponents(helpButton);
+
         if (interaction.customId === 'select_lv') {
             const selectedLv = interaction.values[0].replace('lv_', '');
             const rsOptions = oeData.filter(entry => entry["Landesverband/AZ"] === selectedLv)
@@ -252,7 +266,7 @@ client.on('interactionCreate', async interaction => {
 
             const message = await interaction.reply({
                 content: `Du hast **${selectedLv}** gewählt. Nun wähle deine Regionalstelle:`,
-                components: [row],
+                components: [row, helpButtonRow],
                 ephemeral: true,
                 fetchReply: true
             });
@@ -275,7 +289,7 @@ client.on('interactionCreate', async interaction => {
 
             await interaction.update({
                 content: `Du hast **${selectedRs}** gewählt. Nun wähle deinen Ortsverband:`,
-                components: [row],
+                components: [row, helpButtonRow],
                 ephemeral: true
             });
 
@@ -313,7 +327,7 @@ client.on('interactionCreate', async interaction => {
 
             await interaction.update({
                 content: `Du hast **${selectedOv}** gewählt. Nun wähle deine Teileinheit:`,
-                components: [row1, row2],
+                components: [row1, row2, helpButtonRow],
                 ephemeral: true
             });
 
@@ -322,6 +336,13 @@ client.on('interactionCreate', async interaction => {
             cacheMap.set(interaction.message.id, messageData);
             saveCacheToFile();
         }
+    }
+
+    if (interaction.isButton() && interaction.customId === 'help_button') {
+        await interaction.reply({
+            content: 'Du brauchst Hilfe, Unterstützung oder kannst deinen Bereich nicht finden, erstelle bitte ein Support Ticket unter <#1278738416367829059> in der Kategorie Technisches Anliegen. Schreibe bei eventuellen Fehlern, wie es dazu kam und füge eine Reproduzierbare Anleitung an.',
+            ephemeral: true
+        });
     }
 
     if (interaction.isStringSelectMenu() && (interaction.customId === 'select_te_1' || interaction.customId === 'select_te_2')) {
@@ -334,6 +355,13 @@ client.on('interactionCreate', async interaction => {
             new ButtonBuilder()
                 .setCustomId('skip_username')
                 .setLabel('Überspringen')
+                .setStyle(ButtonStyle.Secondary)
+        );
+
+        const helpButtonRow = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId('help_button')
+                .setLabel('❓')
                 .setStyle(ButtonStyle.Secondary)
         );
 
@@ -350,12 +378,9 @@ client.on('interactionCreate', async interaction => {
         );
         const oeKuerzel = oeEntry ? oeEntry["OE-Kürzel"] : 'Unbekannt';
 
-        // Konsolenausgabe zur Überprüfung des OE-Kürzels
-        console.log(`OE-Kürzel: ${oeKuerzel}`);
-
         await interaction.update({
             content: `Du hast **${selectedTe}** gewählt. Auswahl abgeschlossen. Möchtest du einen Benutzernamen wählen oder überspringen?\nTeileinheit: **${selectedTe}**\nOE-Kürzel: **${oeKuerzel}**`,
-            components: [buttons],
+            components: [buttons, helpButtonRow],
             ephemeral: true
         });
 
@@ -367,7 +392,7 @@ client.on('interactionCreate', async interaction => {
     if (interaction.isButton()) {
         const messageData = cacheMap.get(interaction.message.id);
         if (!messageData) {
-            await interaction.reply({ content: 'Fehler: Nachricht nicht gefunden.', ephemeral: true });
+            await interaction.reply({content: 'Fehler: Nachricht nicht gefunden.', ephemeral: true});
             return;
         }
 
@@ -404,14 +429,26 @@ client.on('interactionCreate', async interaction => {
             const oeKuerzel = oeEntry ? oeEntry["OE-Kürzel"] : 'Unbekannt';
             const nickname = `${username} | ${selectedTe} - ${oeKuerzel}`;
 
-            const member = await interaction.guild.members.fetch(interaction.user.id);
-            await member.setNickname(nickname);
+            try {
+                const member = await interaction.guild.members.fetch(interaction.user.id);
+                await member.setNickname(nickname);
 
-            await interaction.update({ content: `Dein Nickname wurde auf ${nickname} gesetzt.`,components: [], ephemeral: true });
+                await interaction.update({ content: `Dein Nickname wurde auf ${nickname} gesetzt.`, components: [], ephemeral: true });
 
-            // Nachricht aus der cacheMap entfernen
-            cacheMap.delete(interaction.message.id);
-            saveCacheToFile();
+                cacheMap.delete(interaction.message.id);
+                saveCacheToFile();
+            } catch (error) {
+                if (error.code === 50013) { // Fehlende Berechtigungen
+                    await interaction.update({
+                        content: 'Der Nutzer hat höhere Rechte als der Bot. Das Umbenennen wurde zum Crashschutz abgebrochen. Es wird empfohlen, ein Ticket zu eröffnen.',
+                        components: [],
+                        ephemeral: true
+                    });
+                } else {
+                    console.error('Fehler beim Setzen des Nicknames:', error);
+                    await interaction.reply({ content: 'Etwas ist schief gelaufen. Bitte versuche es erneut.', ephemeral: true });
+                }
+            }
         }
     }
 
@@ -449,12 +486,19 @@ client.on('interactionCreate', async interaction => {
 
                 await interaction.update({ content: `Dein Nickname wurde auf ${nickname} gesetzt.`,components: [], ephemeral: true });
 
-                // Nachricht aus der cacheMap entfernen
                 cacheMap.delete(interaction.message.id);
                 saveCacheToFile();
             } catch (error) {
-                console.error('Fehler beim Verarbeiten des Modals:', error);
-                await interaction.update({ content: 'Etwas ist schief gelaufen. Bitte versuche es erneut.', ephemeral: true });
+                if (error.code === 50013) { // Fehlende Berechtigungen
+                    await interaction.update({
+                        content: 'Der Nutzer hat höhere Rechte als der Bot. Das Umbenennen wurde zum Crashschutz abgebrochen. Es wird empfohlen, ein Ticket zu eröffnen.',
+                        components: [],
+                        ephemeral: true
+                    });
+                } else {
+                    console.error('Fehler beim Setzen des Nicknames:', error);
+                    await interaction.reply({ content: 'Etwas ist schief gelaufen. Bitte versuche es erneut.', ephemeral: true });
+                }
             }
         }
     }
